@@ -1,6 +1,7 @@
 // import Project = require('﻿ts-simple-ast');
 import Project from ﻿"ts-simple-ast";
 
+//0. define classname and fields
 const className = 'MyClass';
 const fields = [
   {name:'myProp1',type:'Number'},
@@ -8,33 +9,37 @@ const fields = [
   {name:'myProp3',type:'Number'}
 ]
 
+//1. create project + delete existinf file if it exsists allready
+// (deleting doesn't always seem to work wel ...)
+const projectToCleanup = new Project();
+projectToCleanup.addExistingSourceFiles("./*.ts");
+const existinSrcFile = projectToCleanup.getSourceFile("src/"+className+".ts");
+if(!!existinSrcFile){
+  existinSrcFile.deleteImmediately();
+}
+projectToCleanup.save();
 
 const project = new Project();
 project.addExistingSourceFiles("./*.ts");
 
-const existinSrcFile = project.getSourceFile("src/"+className+".ts");
-if(!!existinSrcFile){
-  existinSrcFile.deleteImmediately();
-}
+//2. create class
 const myClassFile = project.createSourceFile("src/"+className+".ts", "export class "+className+" {}");
-
-// get information from ast
 const myClass = myClassFile.getClassOrThrow(className);
-myClass.getName();          // returns: "MyClass"
-myClass.hasExportKeyword(); // returns: true
-myClass.isDefaultExport();  // returns: false
-
+let constructorBodyText= '';
 fields.forEach(field=>{
   myClass.addProperty({
       name: field.name,
       type: field.type
   });
+  constructorBodyText += `this.${field.name} = ${field.name}\n`;
 });
+myClass.addConstructor({parameters:fields, bodyText:constructorBodyText});
 
+
+//3. create builder
 const builderName = myClass.getName()+'Builder';
 myClassFile.addClass({name: builderName});
 const myClassBuilder = myClassFile.getClassOrThrow(builderName);
-
 myClass.getProperties().forEach(prop => {
   myClassBuilder.addProperty({
       name: prop.getName()
@@ -42,15 +47,35 @@ myClass.getProperties().forEach(prop => {
       // ,initializer: "5" //TODO
   });
 });
+myClassBuilder.addMethod({
+    isStatic: true,
+    name: "builder",
+    parameters: [{name: builderName, type: builderName}],
+    returnType : builderName,
+    bodyText: `return new ${builderName}();`
+});
 
-myClassBuilder.getProperties().forEach(prop => {
+myClass.getProperties().forEach(prop => {
   myClassBuilder.addMethod({
       name: "met"+prop.getName(),
       returnType : builderName,
       parameters: [{name: prop.getName(), type: prop.getType().getText()}],
       bodyText: 'this.'+prop.getName()+" = " + prop.getName()+";\nreturn this;"
   });
+})
+
+myClassBuilder.addMethod({
+    name: "build",
+    returnType : builderName,
+    bodyText: `return new ${className}(${createFieldsForConstructorString(fields)});`
 });
 
-
 project.save();
+
+function createFieldsForConstructorString(fields): string{
+  let fieldsForConstructor = '';
+  fields.forEach((field)=>{
+    fieldsForConstructor += `${field.name}:${field.type}, `
+  });
+  return fieldsForConstructor.slice(0, -2);
+}
