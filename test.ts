@@ -31,7 +31,7 @@ fields.forEach(field=>{
       name: field.name,
       type: field.type
   });
-  constructorBodyText += `this.${field.name} = ${field.name}\n`;
+  constructorBodyText += `this.${field.name} = ${field.name};\n`;
 });
 myClass.addConstructor({parameters:fields, bodyText:constructorBodyText});
 
