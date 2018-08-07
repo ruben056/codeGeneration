@@ -1,17 +1,16 @@
 // import Project = require('﻿ts-simple-ast');
-import Project from "ts-simple-ast";
+import Project, {Scope} from "ts-simple-ast";
 
 //0. define classname and fields
-const className = 'MyClass';
+const className = 'VerwantMetEerInwoner';
 const fields = [
-    {name:'naam',type:'Veld<string | undefined>'},
-    {name:'voornaam',type:'Veld<string | undefined>'},
-    {name:'nationaliteit',type:'Veld<string | undefined>'}
-]
+    {name:'verwantMetEerInwoner',type:'Veld<JaNeenType>'},
+    {name:'eerVerwant',type:'EerInwoner'}
+];
 
 //1. create project + delete existinf file if it exsists allready
 // (deleting doesn't always seem to work wel ...)
-const projectToCleanup = new Project();
+const projectToCleanup = new Project({compilerOptions: {outDir: "dist", declaration : true}});
 projectToCleanup.addExistingSourceFiles("./*.ts");
 const existinSrcFile = projectToCleanup.getSourceFile("src/"+className+".ts");
 if(!!existinSrcFile){
@@ -19,7 +18,7 @@ if(!!existinSrcFile){
 }
 projectToCleanup.save();
 
-const project = new Project();
+const project = new Project({compilerOptions: {outDir: "dist", declaration : true}});
 project.addExistingSourceFiles("./*.ts");
 
 //2. create class
@@ -40,10 +39,14 @@ myClass.addConstructor({parameters:fields, bodyText:constructorBodyText});
 const builderName = myClass.getName()+'Builder';
 myClassFile.addClass({name: builderName});
 const myClassBuilder = myClassFile.getClassOrThrow(builderName);
+
+myClassBuilder.addConstructor({scope: Scope.Private});
+
 myClass.getProperties().forEach(prop => {
   myClassBuilder.addProperty({
-      name: prop.getName()
-      ,type: prop.getType().getText()
+      isReadonly: true,
+      name: prop.getName(),
+      type: prop.getType().getText()
       // ,initializer: "5" //TODO
   });
 });
@@ -57,12 +60,12 @@ myClassBuilder.addMethod({
 
 myClass.getProperties().forEach(prop => {
   myClassBuilder.addMethod({
-      name: "met"+prop.getName(),
+      name: "met"+upperCaseFirstLetter(prop.getName()),
       returnType : builderName,
       parameters: [{name: prop.getName(), type: prop.getType().getText()}],
       bodyText: 'this.'+prop.getName()+" = " + prop.getName()+";\nreturn this;"
   });
-})
+});
 
 myClassBuilder.addMethod({
     name: "build",
@@ -72,9 +75,9 @@ myClassBuilder.addMethod({
 project.save();
 
 
-const projectSpec = new Project();
+const projectSpec = new Project({compilerOptions: {outDir: "dist", declaration : true}});
 projectSpec.addExistingSourceFiles("./*.ts");
-const myClassFile = projectSpec.createSourceFile(
+const mySpecFile = projectSpec.createSourceFile(
     "src/"+className+"spec.ts",
     schrijfSpecFileUit());
 projectSpec.save();
@@ -97,6 +100,9 @@ function createFieldsForConstructorString(fields): string{
   return fieldsForConstructor.slice(0, -2);
 }
 
+function upperCaseFirstLetter(text: string) {
+    return text[0].toUpperCase() + text.slice(1);
+}
 
 function lowerCaseFirstLetter(text: string) {
     return text[0].toLowerCase() + text.slice(1);
