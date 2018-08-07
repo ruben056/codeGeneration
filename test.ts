@@ -1,12 +1,12 @@
 // import Project = require('﻿ts-simple-ast');
-import Project from ﻿"ts-simple-ast";
+import Project from "ts-simple-ast";
 
 //0. define classname and fields
 const className = 'MyClass';
 const fields = [
-  {name:'myProp1',type:'Number'},
-  {name:'myProp2',type:'string'},
-  {name:'myProp3',type:'Number'}
+    {name:'naam',type:'Veld<string | undefined>'},
+    {name:'voornaam',type:'Veld<string | undefined>'},
+    {name:'nationaliteit',type:'Veld<string | undefined>'}
 ]
 
 //1. create project + delete existinf file if it exsists allready
@@ -50,7 +50,7 @@ myClass.getProperties().forEach(prop => {
 myClassBuilder.addMethod({
     isStatic: true,
     name: "builder",
-    parameters: [{name: builderName, type: builderName}],
+    parameters: [{name: lowerCaseFirstLetter(className), type: className}],
     returnType : builderName,
     bodyText: `return new ${builderName}();`
 });
@@ -66,7 +66,7 @@ myClass.getProperties().forEach(prop => {
 
 myClassBuilder.addMethod({
     name: "build",
-    returnType : builderName,
+    returnType : className,
     bodyText: `return new ${className}(${createFieldsForConstructorString(fields)});`
 });
 
@@ -75,7 +75,12 @@ project.save();
 function createFieldsForConstructorString(fields): string{
   let fieldsForConstructor = '';
   fields.forEach((field)=>{
-    fieldsForConstructor += `${field.name}:${field.type}, `
+    fieldsForConstructor += `${field.name}, `
   });
   return fieldsForConstructor.slice(0, -2);
+}
+
+
+function lowerCaseFirstLetter(text: string) {
+    return text[0].toLowerCase() + text.slice(1);
 }
