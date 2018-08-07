@@ -69,9 +69,26 @@ myClassBuilder.addMethod({
     returnType : className,
     bodyText: `return new ${className}(${createFieldsForConstructorString(fields)});`
 });
-
 project.save();
 
+
+const projectSpec = new Project();
+projectSpec.addExistingSourceFiles("./*.ts");
+const myClassFile = projectSpec.createSourceFile(
+    "src/"+className+"spec.ts",
+    schrijfSpecFileUit());
+projectSpec.save();
+
+
+function schrijfSpecFileUit(){
+    let specFileContent = "describe('"+ className +"', () => {";
+    specFileContent += "it('build van "+ className +"', () => {";
+    specFileContent += "});";
+    specFileContent += "it('gekopieerde  "+ className +", neemt alle velden over', () => {";
+    specFileContent += "});";
+    specFileContent += "});";
+    return specFileContent;
+}
 function createFieldsForConstructorString(fields): string{
   let fieldsForConstructor = '';
   fields.forEach((field)=>{
